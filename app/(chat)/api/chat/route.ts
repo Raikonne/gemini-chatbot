@@ -1,22 +1,16 @@
-import { convertToCoreMessages, Message, streamText } from "ai";
-import { z } from "zod";
+import {convertToCoreMessages, Message, streamText} from "ai";
+import {z} from "zod";
 
-import { geminiProModel } from "@/ai";
+import {geminiProModel} from "@/ai";
 import {
   generateReservationPrice,
   generateSampleFlightSearchResults,
   generateSampleFlightStatus,
   generateSampleSeatSelection,
 } from "@/ai/actions";
-import { auth } from "@/app/(auth)/auth";
-import {
-  createReservation,
-  deleteChatById,
-  getChatById,
-  getReservationById,
-  saveChat,
-} from "@/db/queries";
-import { generateUUID } from "@/lib/utils";
+import {auth} from "@/app/(auth)/auth";
+import {createReservation, deleteChatById, getChatById, getReservationById, saveChat,} from "@/db/queries";
+import {generateUUID} from "@/lib/utils";
 
 export async function POST(request: Request) {
   const { id, messages }: { id: string; messages: Array<Message> } =
@@ -66,8 +60,7 @@ export async function POST(request: Request) {
             `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m&hourly=temperature_2m&daily=sunrise,sunset&timezone=auto`,
           );
 
-          const weatherData = await response.json();
-          return weatherData;
+          return await response.json();
         },
       },
       displayFlightStatus: {
@@ -77,12 +70,10 @@ export async function POST(request: Request) {
           date: z.string().describe("Date of the flight"),
         }),
         execute: async ({ flightNumber, date }) => {
-          const flightStatus = await generateSampleFlightStatus({
+          return await generateSampleFlightStatus({
             flightNumber,
             date,
           });
-
-          return flightStatus;
         },
       },
       searchFlights: {
@@ -92,12 +83,10 @@ export async function POST(request: Request) {
           destination: z.string().describe("Destination airport or city"),
         }),
         execute: async ({ origin, destination }) => {
-          const results = await generateSampleFlightSearchResults({
+          return await generateSampleFlightSearchResults({
             origin,
             destination,
           });
-
-          return results;
         },
       },
       selectSeats: {
@@ -106,8 +95,7 @@ export async function POST(request: Request) {
           flightNumber: z.string().describe("Flight number"),
         }),
         execute: async ({ flightNumber }) => {
-          const seats = await generateSampleSeatSelection({ flightNumber });
-          return seats;
+          return await generateSampleSeatSelection({flightNumber});
         },
       },
       createReservation: {
@@ -137,7 +125,7 @@ export async function POST(request: Request) {
 
           const id = generateUUID();
 
-          if (session && session.user && session.user.id) {
+          if (session?.user?.id) {
             await createReservation({
               id,
               userId: session.user.id,
@@ -215,7 +203,7 @@ export async function POST(request: Request) {
       },
     },
     onFinish: async ({ responseMessages }) => {
-      if (session.user && session.user.id) {
+      if (session.user?.id) {
         try {
           await saveChat({
             id,
@@ -246,7 +234,7 @@ export async function DELETE(request: Request) {
 
   const session = await auth();
 
-  if (!session || !session.user) {
+  if (!session?.user) {
     return new Response("Unauthorized", { status: 401 });
   }
 

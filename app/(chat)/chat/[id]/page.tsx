@@ -7,15 +7,14 @@ import { getChatById } from "@/db/queries";
 import { Chat } from "@/db/schema";
 import { convertToUIMessages } from "@/lib/utils";
 
-export default async function Page({ params }: { params: any }) {
-  const { id } = params;
+export default async function Page({ params }: Readonly<{ params: any }>) {
+  const { id } = await params;
   const chatFromDb = await getChatById({ id });
 
   if (!chatFromDb) {
     notFound();
   }
 
-  // type casting and converting messages to UI messages
   const chat: Chat = {
     ...chatFromDb,
     messages: convertToUIMessages(chatFromDb.messages as Array<CoreMessage>),
@@ -23,7 +22,7 @@ export default async function Page({ params }: { params: any }) {
 
   const session = await auth();
 
-  if (!session || !session.user) {
+  if (!session?.user) {
     return notFound();
   }
 

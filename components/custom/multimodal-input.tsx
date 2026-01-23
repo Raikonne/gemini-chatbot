@@ -42,7 +42,7 @@ export function MultimodalInput({
   messages,
   append,
   handleSubmit,
-}: {
+}: Readonly<{
   input: string;
   setInput: (value: string) => void;
   isLoading: boolean;
@@ -51,16 +51,16 @@ export function MultimodalInput({
   setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
   messages: Array<Message>;
   append: (
-    message: Message | CreateMessage,
-    chatRequestOptions?: ChatRequestOptions,
+      message: Message | CreateMessage,
+      chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
   handleSubmit: (
-    event?: {
-      preventDefault?: () => void;
-    },
-    chatRequestOptions?: ChatRequestOptions,
+      event?: {
+        preventDefault?: () => void;
+      },
+      chatRequestOptions?: ChatRequestOptions,
   ) => void;
-}) {
+}>) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
 
@@ -73,7 +73,7 @@ export function MultimodalInput({
   const adjustHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 0}px`;
+      textareaRef.current.style.height = `${(textareaRef.current.scrollHeight)}px`;
     }
   };
 
