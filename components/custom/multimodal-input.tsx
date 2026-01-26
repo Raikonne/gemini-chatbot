@@ -196,8 +196,11 @@ export function MultimodalInput({
 
       {(attachments.length > 0 || uploadQueue.length > 0) && (
         <div className="flex flex-row gap-2 overflow-x-scroll">
-          {attachments.map((attachment) => (
-            <PreviewAttachment key={attachment.url} attachment={attachment} />
+          {attachments.map((attachment, index) => (
+              <PreviewAttachment
+                  key={`${attachment.url}-${index}`}
+                  attachment={attachment}
+              />
           ))}
 
           {uploadQueue.map((filename) => (

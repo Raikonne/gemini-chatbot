@@ -5,11 +5,8 @@ import { desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { user, chat, User, reservation } from "./schema";
+import { user, chat, User } from "./schema";
 
-// Optionally, if not using email/pass login, you can
-// use the Drizzle adapter for Auth.js / NextAuth
-// https://authjs.dev/reference/adapter/drizzle
 let client = postgres(`${process.env.POSTGRES_URL!}?sslmode=disable`);
 let db = drizzle(client);
 
@@ -97,46 +94,4 @@ export async function getChatById({ id }: { id: string }) {
     console.error("Failed to get chat by id from database");
     throw error;
   }
-}
-
-export async function createReservation({
-  id,
-  userId,
-  details,
-}: {
-  id: string;
-  userId: string;
-  details: any;
-}) {
-  return await db.insert(reservation).values({
-    id,
-    createdAt: new Date(),
-    userId,
-    hasCompletedPayment: false,
-    details: JSON.stringify(details),
-  });
-}
-
-export async function getReservationById({ id }: { id: string }) {
-  const [selectedReservation] = await db
-    .select()
-    .from(reservation)
-    .where(eq(reservation.id, id));
-
-  return selectedReservation;
-}
-
-export async function updateReservation({
-  id,
-  hasCompletedPayment,
-}: {
-  id: string;
-  hasCompletedPayment: boolean;
-}) {
-  return await db
-    .update(reservation)
-    .set({
-      hasCompletedPayment,
-    })
-    .where(eq(reservation.id, id));
 }
