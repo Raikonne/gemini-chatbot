@@ -55,16 +55,16 @@ export async function POST(request: Request) {
         }
 
         const uploadPromises = files.map(async (file) => {
-            const uniqueName = `${Date.now()}-${file.name}`;
-
+            const uniqueName = `${file.name}`;
             const { data, error } = await supabase.storage
                 .from("chat-attachments")
                 .upload(uniqueName, file, {
                     cacheControl: "3600",
-                    upsert: false,
+                    upsert: true,
                 });
 
             if (error) {
+                console.error(`[Upload] Error uploading ${uniqueName}:`, error);
                 throw new Error(error.message);
             }
 

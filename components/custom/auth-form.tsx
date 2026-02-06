@@ -1,3 +1,5 @@
+import React from "react";
+
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 
@@ -5,11 +7,13 @@ export function AuthForm({
   action,
   children,
   defaultEmail = "",
-}: {
+  errorMessage,
+}: Readonly<{
   action: any;
   children: React.ReactNode;
   defaultEmail?: string;
-}) {
+  errorMessage?: string;
+}>) {
   return (
     <form action={action} className="flex flex-col gap-4 px-4 sm:px-16">
       <div className="flex flex-col gap-2">
@@ -46,6 +50,12 @@ export function AuthForm({
           required
         />
       </div>
+
+      {errorMessage && (
+          <div className="text-red-600 text-sm bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 p-2 rounded-md">
+            <p>{errorMessage}</p>
+          </div>
+      )}
 
       {children}
     </form>

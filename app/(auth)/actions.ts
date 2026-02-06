@@ -48,7 +48,8 @@ export interface RegisterActionState {
     | "success"
     | "failed"
     | "user_exists"
-    | "invalid_data";
+    | "invalid_data"
+    | "access_denied";
 }
 
 export const register = async (
@@ -78,6 +79,10 @@ export const register = async (
   } catch (error) {
     if (error instanceof z.ZodError) {
       return { status: "invalid_data" };
+    }
+
+    if ((error as Error).message.includes("This user email is not allowed to register")) {
+      return { status: "access_denied" };
     }
 
     return { status: "failed" };

@@ -27,7 +27,7 @@ export async function createUser(email: string, password: string) {
     return await db.insert(user).values({ email, password: hash });
   } catch (error) {
     console.error("Detailed DB Error:", error);
-    throw new Error("Failed to create user in database");
+    throw error;
   }
 }
 
@@ -59,7 +59,7 @@ export async function saveChat({
       userId,
     });
   } catch (error) {
-    console.error("Failed to save chat in database");
+    console.error("Failed to save chat in database ", error);
     throw error;
   }
 }

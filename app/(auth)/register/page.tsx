@@ -31,6 +31,8 @@ export default function Page() {
     } else if (state.status === "success") {
       toast.success("Account created successfully");
       router.refresh();
+    } else if (state.status === "access_denied") {
+      toast.error("Access Denied: Email not allowed to register");
     }
   }, [state, router]);
 
@@ -48,7 +50,7 @@ export default function Page() {
             Create an account with your email and password
           </p>
         </div>
-        <AuthForm action={handleSubmit} defaultEmail={email}>
+        <AuthForm action={handleSubmit} defaultEmail={email} errorMessage={state.status === "access_denied" ? "Access Denied: Your email is not on the allowed list" : ""}>
           <SubmitButton>Sign Up</SubmitButton>
           <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
             {"Already have an account? "}

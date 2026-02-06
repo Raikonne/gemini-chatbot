@@ -19,19 +19,6 @@ import useWindowSize from "./use-window-size";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 
-const suggestedActions = [
-  {
-    title: "Help me book a flight",
-    label: "from San Francisco to London",
-    action: "Help me book a flight from San Francisco to London",
-  },
-  {
-    title: "What is the status",
-    label: "of flight BA142 flying tmrw?",
-    action: "What is the status of flight BA142 flying tmrw?",
-  },
-];
-
 export function MultimodalInput({
   input,
   setInput,
@@ -83,7 +70,7 @@ export function MultimodalInput({
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
+  const [uploadQueue, setUploadQueue] = useState<Array<{ name: string; type: string }>>([]);
 
   const submitForm = useCallback(() => {
     handleSubmit(undefined, {
@@ -109,12 +96,13 @@ export function MultimodalInput({
 
       if (response.ok) {
         const data = await response.json();
-        const { url, pathname, contentType } = data;
+        const fileData = Array.isArray(data) ? data[0] : data;
+        const { url, pathname, contentType } = fileData;
 
         return {
           url,
-          name: pathname,
-          contentType: contentType,
+          name: pathname ?? file.name,
+          contentType: contentType || file.type,
         };
       } else {
         const { error } = await response.json();
@@ -126,64 +114,65 @@ export function MultimodalInput({
   };
 
   const handleFileChange = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(event.target.files || []);
+      async (event: ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files || []);
 
-      setUploadQueue(files.map((file) => file.name));
+        setUploadQueue(files.map((file) => ({ name: file.name, type: file.type })));
 
-      try {
-        const uploadPromises = files.map((file) => uploadFile(file));
-        const uploadedAttachments = await Promise.all(uploadPromises);
-        const successfullyUploadedAttachments = uploadedAttachments.filter(
-          (attachment) => attachment !== undefined,
-        );
+        try {
+          const uploadPromises = files.map((file) => uploadFile(file));
+          const uploadedAttachments = await Promise.all(uploadPromises);
+          const successfullyUploadedAttachments = uploadedAttachments.filter(
+              (attachment) => attachment !== undefined,
+          );
 
-        setAttachments((currentAttachments) => [
-          ...currentAttachments,
-          ...successfullyUploadedAttachments,
-        ]);
-      } catch (error) {
-        console.error("Error uploading files!", error);
-      } finally {
-        setUploadQueue([]);
-      }
-    },
-    [setAttachments],
+          setAttachments((currentAttachments) => {
+            const newFilenames = new Set(successfullyUploadedAttachments.map(a => a.name));
+
+            const uniqueCurrentAttachments = currentAttachments.filter(
+                attachment => !newFilenames.has(attachment.name ?? 'Attachment')
+            );
+
+            return [...uniqueCurrentAttachments, ...successfullyUploadedAttachments];
+          });
+
+        } catch (error) {
+          console.error("Error uploading files!", error);
+        } finally {
+          setUploadQueue([]);
+        }
+      },
+      [setAttachments],
   );
+
+  const handleDeleteFile = async (attachment: Attachment) => {
+    setAttachments((current) =>
+        current.filter((a) => a.name !== attachment.name)
+    );
+
+    try {
+      const response = await fetch(`/api/files/delete`, {
+        method: "DELETE",
+        body: JSON.stringify({
+          url: attachment.url,
+          path: attachment.name,
+        }),
+      });
+
+      if (!response.ok) {
+        setAttachments((current) => [...current, attachment]);
+        console.error("Failed to delete file from storage");
+        toast.error("Could not delete file from server");
+      }
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      setAttachments((current) => [...current, attachment]);
+      toast.error("Failed to delete file");
+    }
+  };
 
   return (
     <div className="relative w-full flex flex-col gap-4">
-      {messages.length === 0 &&
-        attachments.length === 0 &&
-        uploadQueue.length === 0 && (
-          <div className="grid sm:grid-cols-2 gap-4 w-full md:px-0 mx-auto md:max-w-[500px]">
-            {suggestedActions.map((suggestedAction, index) => (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ delay: 0.05 * index }}
-                key={index}
-                className={index > 1 ? "hidden sm:block" : "block"}
-              >
-                <button
-                  onClick={async () => {
-                    append({
-                      role: "user",
-                      content: suggestedAction.action,
-                    });
-                  }}
-                  className="border-none bg-muted/50 w-full text-left border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 rounded-lg p-3 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex flex-col"
-                >
-                  <span className="font-medium">{suggestedAction.title}</span>
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    {suggestedAction.label}
-                  </span>
-                </button>
-              </motion.div>
-            ))}
-          </div>
-        )}
 
       <input
         type="file"
@@ -195,21 +184,22 @@ export function MultimodalInput({
       />
 
       {(attachments.length > 0 || uploadQueue.length > 0) && (
-        <div className="flex flex-row gap-2 overflow-x-scroll">
-          {attachments.map((attachment, index) => (
-              <PreviewAttachment
-                  key={`${attachment.url}-${index}`}
-                  attachment={attachment}
-              />
-          ))}
+          <div className="flex flex-row gap-2 overflow-x-scroll p-2">
+            {attachments.map((attachment, index) => (
+                <PreviewAttachment
+                    key={`${attachment.url}-${index}`}
+                    attachment={attachment}
+                    onRemove={() => handleDeleteFile(attachment)}
+                />
+            ))}
 
-          {uploadQueue.map((filename) => (
+          {uploadQueue.map((file) => (
             <PreviewAttachment
-              key={filename}
+              key={file.name}
               attachment={{
                 url: "",
-                name: filename,
-                contentType: "",
+                name: file.name,
+                contentType: file.type,
               }}
               isUploading={true}
             />

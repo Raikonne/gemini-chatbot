@@ -74,9 +74,9 @@ export const History = ({ user }: { user: User | undefined }) => {
       success: () => {
         mutate((history) => {
           if (history) {
-            return history.filter((h) => h.id !== id);
+            return history.filter((h) => h.id !== deleteId);
           }
-        });
+        }, { revalidate: true });
         return "Chat deleted successfully";
       },
       error: "Failed to delete chat",

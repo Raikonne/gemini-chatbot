@@ -13,10 +13,10 @@ import { Overview } from "./overview";
 export function Chat({
   id,
   initialMessages,
-}: {
-  id: string;
-  initialMessages: Array<Message>;
-}) {
+}: Readonly<{
+    id: string;
+    initialMessages: Array<Message>;
+}>) {
   const { messages, handleSubmit, input, setInput, append, isLoading, stop } =
     useChat({
       id,

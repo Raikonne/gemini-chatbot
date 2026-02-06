@@ -1,6 +1,6 @@
 {
-  "id": "58eec28f-3819-47cc-9b8d-26bc712b203c",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "e773596b-bf79-4ea0-83f5-57bace530e1f",
+  "prevId": "58eec28f-3819-47cc-9b8d-26bc712b203c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -39,62 +39,6 @@
         "Chat_userId_User_id_fk": {
           "name": "Chat_userId_User_id_fk",
           "tableFrom": "Chat",
-          "tableTo": "User",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "public.Reservation": {
-      "name": "Reservation",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "details": {
-          "name": "details",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "hasCompletedPayment": {
-          "name": "hasCompletedPayment",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "userId": {
-          "name": "userId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "Reservation_userId_User_id_fk": {
-          "name": "Reservation_userId_User_id_fk",
-          "tableFrom": "Reservation",
           "tableTo": "User",
           "columnsFrom": [
             "userId"
