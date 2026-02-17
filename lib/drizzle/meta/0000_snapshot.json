@@ -1,6 +1,6 @@
 {
-  "id": "e773596b-bf79-4ea0-83f5-57bace530e1f",
-  "prevId": "58eec28f-3819-47cc-9b8d-26bc712b203c",
+  "id": "e2b8e9bd-fc6e-46b3-bdac-acce1b972376",
+  "prevId": "e773596b-bf79-4ea0-83f5-57bace530e1f",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -50,6 +50,60 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.File": {
+      "name": "File",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mimeType": {
+          "name": "mimeType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "googleFileUri": {
+          "name": "googleFileUri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "googleExpiresAt": {
+          "name": "googleExpiresAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },

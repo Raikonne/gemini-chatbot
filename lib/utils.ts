@@ -36,13 +36,6 @@ export const fetcher = async (url: string) => {
   return res.json();
 };
 
-export function getLocalStorage(key: string) {
-  if (typeof window !== "undefined") {
-    return JSON.parse(localStorage.getItem(key) || "[]");
-  }
-  return [];
-}
-
 export function generateUUID(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
     const r = (Math.random() * 16) | 0;
