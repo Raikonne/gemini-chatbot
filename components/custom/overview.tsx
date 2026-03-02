@@ -14,7 +14,7 @@ export const Overview = () => {
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50/50 p-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
 
                 <Image
-                    src="/images/chatbot.jpg"
+                    src="/images/basil-logo.jpg"
                     alt="Gemini Chatbot"
                     width={500}
                     height={300}
