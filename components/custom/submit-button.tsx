@@ -6,7 +6,7 @@ import { LoaderIcon } from "@/components/custom/icons";
 
 import { Button } from "../ui/button";
 
-export function SubmitButton({ children }: { children: React.ReactNode }) {
+export function SubmitButton({ children }: Readonly<{ children: React.ReactNode }>) {
   const { pending } = useFormStatus();
 
   return (

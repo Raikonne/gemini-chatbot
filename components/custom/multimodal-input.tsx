@@ -2,15 +2,16 @@
 
 import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
 import React, {
-  useRef,
-  useEffect,
-  useCallback,
-  Dispatch,
-  SetStateAction,
-  ChangeEvent,
+    useRef,
+    useEffect,
+    useCallback,
+    Dispatch,
+    SetStateAction,
+    ChangeEvent, useState,
 } from "react";
 import { toast } from "sonner";
 
+import {ActiveDatasetIndicator} from "@/components/ui/active-dataset-indicator";
 import { fileToBase64 } from "@/db/util";
 
 import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
@@ -50,6 +51,7 @@ export function MultimodalInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -131,6 +133,7 @@ export function MultimodalInput({
                     const attachment = await uploadFile(file);
                     if (attachment) {
                         newAttachments.push(attachment);
+                        setRefreshTrigger(prev => prev + 1);
                     }
                 } else {
                     try {
@@ -165,6 +168,7 @@ export function MultimodalInput({
 
     return (
         <div className="relative w-full flex flex-col gap-4">
+            <ActiveDatasetIndicator refreshTrigger={refreshTrigger} />
             <input
                 type="file"
                 className="fixed -top-4 -left-4 size-0.5 opacity-0 pointer-events-none"

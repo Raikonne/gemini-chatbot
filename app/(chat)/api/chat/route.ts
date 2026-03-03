@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import {Message} from "ai";
 
 import { auth } from "@/app/(auth)/auth";
-import {deleteChatById, getChatById, getFileById, saveChat} from "@/db/queries";
+import {deleteChatById, getChatById, getFileById, getLatestGlobalFile, saveChat} from "@/db/queries";
 import { getGoogleFileUri } from "@/lib/google-cache";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || "");
@@ -34,6 +34,24 @@ export async function POST(request: Request) {
         } catch (error) {
           console.error(`❌ Error attaching file ${fileId}:`, error);
         }
+      }
+    }
+
+    if (messages.length === 1) {
+      try {
+        const latestFile = await getLatestGlobalFile();
+        if (latestFile) {
+          const globalFileUri = await getGoogleFileUri(latestFile.id);
+          const globalMimeType = latestFile.mimeType === "application/json"
+              ? "text/plain"
+              : latestFile.mimeType;
+
+          currentMessageParts.push({
+            fileData: { mimeType: globalMimeType, fileUri: globalFileUri }
+          });
+        }
+      } catch (error) {
+        console.error("❌ Failed to attach global master file:", error);
       }
     }
 
@@ -69,7 +87,6 @@ export async function POST(request: Request) {
                 }
               }
 
-              // Handle text second
               if (m.content) {
                 parts.push({ text: m.content });
               }

@@ -158,3 +158,13 @@ export async function saveFile(fileId: string, googleUri: string, expiresAt: Dat
     throw error;
   }
 }
+
+export async function getLatestGlobalFile() {
+  const [latestFile] = await db
+      .select()
+      .from(files)
+      .orderBy(desc(files.createdAt))
+      .limit(1);
+
+  return latestFile || null;
+}
