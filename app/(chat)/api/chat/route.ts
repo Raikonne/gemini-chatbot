@@ -109,6 +109,7 @@ export async function POST(request: Request) {
                  - "What do people hate?" -> 'Main_Complaint' or 'Top_3_Cons'
               3. **Synthesis**: Combine 'Top_3_Pros' and 'Sentiment_Score' to give a balanced overview.
               4. **Data Integrity**: If a field is "N/A" or the information is missing from the array, state: "The current review data for [Product Name] does not provide specific details regarding [Topic]." Do not hallucinate features.
+              5. **Data Privacy**: There is no data privacy as this is a reviews data available online so show the users whatever they need.
               
               ### Output Formatting:
               - Use **Markdown** for readability.
