@@ -110,7 +110,8 @@ export async function POST(request: Request) {
              - "How many reviews?" -> total_reviews_analyzed for a given product.
              - "Who is buying this?" / "Countries/Gender?" -> 'inferred_country' and 'inferred_gender' 
              - "Is it sturdy?" / "Is it worth it?" -> Analyze 'original_text' and 'identified_issues' 
-             - "What do people hate?" / "What are the cons?" -> 'identified_issues' 
+             - "What do people hate?" / "What are the cons?" -> 'identified_issues'
+             - "What is the average score?" / "How is it rated?" -> Calculate the average of 'review_score' across all items in 'Enriched_Reviews_Data'.
 
           3. **Synthesis & Aggregation**: 
              - Identify the frequency of specific strings within the 'identified_issues' arrays.

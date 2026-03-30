@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "mcp__github__create_pull_request",
+      "WebSearch",
+      "WebFetch(domain:www.classcentral.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:support.claude.com)",
+      "WebFetch(domain:www.theneuron.ai)",
+      "Bash(curl:*)",
+      "Bash(winget:*)",
+      "Bash(choco:*)",
+      "Bash(source:*)",
+      "Bash(ls:*)",
+      "Read(//c//**)",
+      "Bash(mkdir:*)",
+      "Bash(test:*)",
+      "Bash(set:*)",
+      "Bash(env | grep -i \"anthropic\\\\|api_key\")",
+      "Bash(printenv:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__codegraph__codegraph_files",
+      "Bash(cargo:*)",
+      "Bash(ls /c/Users/danie/workspace/gemini-chatbot/app/\\\\\\(auth\\\\\\)/login/)",
+      "Bash(ls /c/Users/danie/workspace/gemini-chatbot/app/\\\\\\(auth\\\\\\)/register/)",
+      "Skill(update-config)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(f''''Short {s[\"\"id\"\"]}: hook={s[\"\"hook_text\"\"]} | title={s[\"\"title\"\"]}''''\\) for s in d[''''shorts'''']]\")",
+      "Bash(echo:*)",
+      "Bash(pnpm build:*)"
+    ]
+  }
+}
