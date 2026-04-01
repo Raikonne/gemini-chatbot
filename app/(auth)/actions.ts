@@ -2,12 +2,26 @@
 
 import { z } from "zod";
 
-import { createUser, getUser } from "@/db/queries";
+import {
+  createPasswordResetToken,
+  createUser,
+  deletePasswordResetToken,
+  getPasswordResetToken,
+  getUser,
+  updateUserPassword,
+} from "@/db/queries";
 
 import { signIn } from "./auth";
 
 const authFormSchema = z.object({
   email: z.string().email(),
+  password: z.string().min(6),
+});
+
+const emailSchema = z.object({ email: z.string().email() });
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
   password: z.string().min(6),
 });
 
@@ -85,6 +99,64 @@ export const register = async (
       return { status: "access_denied" };
     }
 
+    return { status: "failed" };
+  }
+};
+
+export interface RequestPasswordResetState {
+  status: "idle" | "in_progress" | "success" | "failed" | "invalid_data";
+  token?: string;
+}
+
+export const requestPasswordReset = async (
+  _: RequestPasswordResetState,
+  formData: FormData,
+): Promise<RequestPasswordResetState> => {
+  try {
+    const { email } = emailSchema.parse({ email: formData.get("email") });
+    const [existingUser] = await getUser(email);
+    if (existingUser) {
+      const token = await createPasswordResetToken(email);
+      return { status: "success", token };
+    }
+    // Don't reveal whether the email exists
+    return { status: "success" };
+  } catch (error) {
+    if (error instanceof z.ZodError) return { status: "invalid_data" };
+    return { status: "failed" };
+  }
+};
+
+export interface ResetPasswordState {
+  status:
+    | "idle"
+    | "in_progress"
+    | "success"
+    | "failed"
+    | "invalid_data"
+    | "invalid_token";
+}
+
+export const resetPassword = async (
+  _: ResetPasswordState,
+  formData: FormData,
+): Promise<ResetPasswordState> => {
+  try {
+    const { token, password } = resetPasswordSchema.parse({
+      token: formData.get("token"),
+      password: formData.get("password"),
+    });
+
+    const record = await getPasswordResetToken(token);
+    if (!record || record.expiresAt < new Date()) {
+      return { status: "invalid_token" };
+    }
+
+    await updateUserPassword(record.email, password);
+    await deletePasswordResetToken(token);
+    return { status: "success" };
+  } catch (error) {
+    if (error instanceof z.ZodError) return { status: "invalid_data" };
     return { status: "failed" };
   }
 };

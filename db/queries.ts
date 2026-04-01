@@ -5,7 +5,7 @@ import { desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import {user, chat, User, files} from "./schema";
+import {user, chat, User, files, passwordResetTokens} from "./schema";
 
 let client = postgres(`${process.env.POSTGRES_URL!}?sslmode=disable`);
 let db = drizzle(client);
@@ -157,6 +157,31 @@ export async function saveFile(fileId: string, googleUri: string, expiresAt: Dat
     console.error("Failed to update file cache:", error);
     throw error;
   }
+}
+
+export async function createPasswordResetToken(email: string): Promise<string> {
+  const token = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  await db.insert(passwordResetTokens).values({ token, email, expiresAt });
+  return token;
+}
+
+export async function getPasswordResetToken(token: string) {
+  const [record] = await db
+    .select()
+    .from(passwordResetTokens)
+    .where(eq(passwordResetTokens.token, token));
+  return record;
+}
+
+export async function deletePasswordResetToken(token: string) {
+  await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+}
+
+export async function updateUserPassword(email: string, newPassword: string) {
+  const salt = genSaltSync(10);
+  const hash = hashSync(newPassword, salt);
+  await db.update(user).set({ password: hash }).where(eq(user.email, email));
 }
 
 export async function getLatestGlobalFile() {

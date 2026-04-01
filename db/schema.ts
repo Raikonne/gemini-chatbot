@@ -36,6 +36,12 @@ export const allowedUsers = pgTable("AllowedUser", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
+export const passwordResetTokens = pgTable("PasswordResetToken", {
+  token: text("token").primaryKey().notNull(),
+  email: varchar("email", { length: 64 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+});
+
 export const files = pgTable("File", {
   id: uuid("id").defaultRandom().primaryKey(),
   url: text("url").notNull(),
