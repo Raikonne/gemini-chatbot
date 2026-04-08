@@ -90,7 +90,6 @@ export async function POST(request: Request) {
               if (m.content) {
                 parts.push({ text: m.content });
               }
-
               return { role: m.role === "user" ? "user" : "model", parts };
             })
     );
