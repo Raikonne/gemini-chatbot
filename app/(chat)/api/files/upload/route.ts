@@ -14,40 +14,21 @@ export async function POST(request: Request) {
     const supabase = createClient();
 
     try {
-        const formData = await request.formData();
+        const { path, name, mimeType } = await request.json();
 
-        const file = formData.get("file") as File;
-        if (!file) {
-            return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-        }
-
-        const isJson = file.name.endsWith(".json");
-        if (!isJson) {
-            return NextResponse.json({ error: "Only JSON files are allowed in global storage" }, { status: 400 });
-        }
-
-        const filePath = file.name;
-
-        const { error: uploadError } = await supabase.storage
-            .from("chat-attachments")
-            .upload(filePath, file, {
-                upsert: true,
-            });
-
-        if (uploadError) {
-            console.error("Supabase upload error:", uploadError);
-            return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+        if (!path || !name) {
+            return NextResponse.json({ error: "Missing file metadata" }, { status: 400 });
         }
 
         const { data: { publicUrl } } = supabase.storage
             .from("chat-attachments")
-            .getPublicUrl(filePath);
+            .getPublicUrl(path);
 
         const fileRecord = await createFile({
             id: generateUUID(),
             url: publicUrl,
-            name: file.name,
-            mimeType: file.type,
+            name,
+            mimeType: mimeType || "application/json",
         });
 
         return NextResponse.json(fileRecord);

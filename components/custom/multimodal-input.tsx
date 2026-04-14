@@ -1,10 +1,11 @@
 "use client";
 
+import { createClient } from "@supabase/supabase-js";
 import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
 import React, {
     useRef,
     useEffect,
-    useCallback,
+    useCallback, 
     Dispatch,
     SetStateAction,
     ChangeEvent, useState,
@@ -72,33 +73,57 @@ export function MultimodalInput({
   };
 
     const uploadFile = async (file: File) => {
-        const formData = new FormData();
-        formData.append("file", file);
-
         try {
-            const response = await fetch(`/api/files/upload`, {
-                method: "POST",
-                body: formData,
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const fileData = Array.isArray(data) ? data[0] : data;
-
-                return {
-                    url: fileData.url,
-                    name: fileData.pathname ?? file.name,
-                    contentType: fileData.contentType ?? file.type,
-                    extras: { id: fileData.id },
-                };
-            } else {
-                const { error } = await response.json();
-                toast.error(error || "Upload failed");
+            // 1. Get a signed upload URL from the server (no file body sent to Next.js)
+            const signedRes = await fetch(
+                `/api/files/signed-url?filename=${encodeURIComponent(file.name)}`
+            );
+            if (!signedRes.ok) {
+                const { error } = await signedRes.json();
+                toast.error(error || "Failed to get upload URL");
                 return null;
             }
+            const { signedUrl, token, path } = await signedRes.json();
+
+            // 2. Upload directly to Supabase (bypasses Next.js body size limits)
+            const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            );
+            const { error: uploadError } = await supabase.storage
+                .from("chat-attachments")
+                .uploadToSignedUrl(path, token, file, { upsert: true });
+
+            if (uploadError) {
+                console.error("Supabase upload error:", uploadError);
+                toast.error("Upload failed");
+                return null;
+            }
+
+            // 3. Save the file record to the database
+            const metaRes = await fetch("/api/files/upload", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path, name: file.name, mimeType: file.type }),
+            });
+
+            if (!metaRes.ok) {
+                const { error } = await metaRes.json();
+                toast.error(error || "Failed to save file record");
+                return null;
+            }
+
+            const fileRecord = await metaRes.json();
+            return {
+                url: fileRecord.url,
+                name: file.name,
+                contentType: file.type,
+                extras: { id: fileRecord.id },
+            };
         } catch (error) {
             toast.error("Failed to upload file, please try again!");
-            console.error("Failed to upload file ", error);
+            console.error("Failed to upload file:", error);
+            return null;
         }
     };
 

@@ -56,7 +56,14 @@
       "Bash(grep -o \"require\\(''''[^'''']*next/document[^'''']*''''\\)\\\\|from ''''[^'''']*next/document[^'''']*''''\" .next/server/chunks/2496.js)",
       "Bash(git stash:*)",
       "Bash(node:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(vercel env:*)",
+      "Bash(npx vercel:*)",
+      "Bash(codegraph init:*)",
+      "Bash(codegraph sync:*)",
+      "Bash(codegraph index:*)",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(python3:*)"
     ]
   }
 }
