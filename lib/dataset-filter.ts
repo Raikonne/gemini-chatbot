@@ -38,17 +38,34 @@ function deduplicateReviews(products: any[]): any[] {
   }));
 }
 
+// Strip control characters (except tab/newline/CR) and fix lone surrogates
+function sanitizeString(str: string): string {
+  return str
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "") // control chars
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, ""); // lone surrogates
+}
+
+function sanitizeData(value: unknown): unknown {
+  if (typeof value === "string") return sanitizeString(value);
+  if (Array.isArray(value)) return value.map(sanitizeData);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, sanitizeData(v)]));
+  }
+  return value;
+}
+
 function buildPayload(products: any[]): { json: string; hasOriginalText: boolean } {
   // Deduplicate reviews shared across color/size variants before sending
   const deduped = deduplicateReviews(products);
+  const sanitized = sanitizeData(deduped) as any[];
 
-  let json = JSON.stringify(deduped);
+  let json = JSON.stringify(sanitized);
   if (roughTokens(json) <= TOKEN_BUDGET) {
     return { json, hasOriginalText: true };
   }
 
   // Strip original_text and reviewer_name — saves ~80% of token cost
-  const stripped = stripReviewFields(deduped, ["original_text", "reviewer_name"]);
+  const stripped = stripReviewFields(sanitized, ["original_text", "reviewer_name"]);
   json = JSON.stringify(stripped);
   return { json, hasOriginalText: false };
 }
@@ -60,11 +77,11 @@ function matchIntent(
   const t = text.toLowerCase();
 
   // 1. Product_Code — 5 or 6 digit number
-  const numMatches = [...t.matchAll(/\b(\d{5,6})\b/g)].map(m => parseInt(m[1]));
+  const numMatches = [...new Set([...t.matchAll(/\b(\d{5,6})\b/g)].map(m => parseInt(m[1])))];
   if (numMatches.length > 0) {
     const byCode = dataset.filter(p => numMatches.includes(p.Product_Code));
     if (byCode.length > 0) {
-      return { products: byCode, tier: byCode.length === 1 ? "product" : "family", matchedOn: `Product_Code: ${numMatches.join(", ")}` };
+      return { products: byCode, tier: byCode.length === 1 ? "product" : "family", matchedOn: `Product_Code: ${byCode.map(p => p.Product_Code).join(", ")}` };
     }
   }
 

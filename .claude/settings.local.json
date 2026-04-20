@@ -63,7 +63,9 @@
       "Bash(codegraph sync:*)",
       "Bash(codegraph index:*)",
       "WebFetch(domain:ai.google.dev)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npm show *)",
+      "Bash(npx npm-check-updates *)"
     ]
   }
 }

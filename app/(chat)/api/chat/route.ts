@@ -9,6 +9,63 @@ import { getGoogleFileUri } from "@/lib/google-cache";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || "");
 
+function isRetryable(err: any): boolean {
+  const msg: string = err?.message ?? "";
+  const status: number = err?.status ?? err?.statusCode ?? 0;
+  return (
+    status === 503 ||
+    status === 429 ||
+    msg.includes("Failed to parse stream") ||
+    msg.includes("503") ||
+    msg.includes("Service Unavailable") ||
+    msg.includes("overloaded")
+  );
+}
+
+
+async function streamModel(model: ReturnType<typeof genAI.getGenerativeModel>, history: any[], parts: any[]): Promise<string> {
+  const chat = model.startChat({ history });
+  const result = await chat.sendMessageStream(parts);
+  let text = "";
+  for await (const chunk of result.stream) {
+    text += chunk.text();
+  }
+  return text;
+}
+
+async function generateWithRetry(
+  model: ReturnType<typeof genAI.getGenerativeModel>,
+  fallbackModel: ReturnType<typeof genAI.getGenerativeModel>,
+  history: any[],
+  parts: any[],
+  maxRetries = 5,
+): Promise<{ text: string; usedFallback: boolean }> {
+  let use503Fallback = false;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const activeModel = use503Fallback ? fallbackModel : model;
+    const label = use503Fallback ? "gemini-3-flash-preview (fallback)" : "gemini-3.1-flash-lite-preview";
+
+    try {
+      const text = await streamModel(activeModel, history, parts);
+      return { text, usedFallback: use503Fallback };
+    } catch (err: any) {
+      if (!isRetryable(err)) throw err;
+      if (attempt === maxRetries) throw err;
+
+      if (!use503Fallback) {
+        use503Fallback = true;
+        console.warn(`⚠️ Attempt ${attempt + 1} failed on ${label} (${err.message}), switching to gemini-2.5-pro...`);
+      } else {
+        const delay = attempt === 0 ? 1000 : 2000;
+        console.warn(`⚠️ Attempt ${attempt + 1} failed on ${label} (${err.message}), retrying in ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  throw new Error("generateWithRetry exhausted all retries");
+}
+
 export async function POST(request: Request) {
   try {
     const { id, messages, data }: { id: string; messages: Array<Message>; data?: { files?: string[] } } =
@@ -45,8 +102,8 @@ export async function POST(request: Request) {
       if (latestFile) {
         const recentMessages = messages
           .slice(0, -1)
-          .filter(m => m.role === "user" || m.role === "assistant")
-          .slice(-6)
+          .filter(m => m.role === "user")
+          .slice(-4)
           .reverse()
           .map(m => m.content as string);
 
@@ -111,10 +168,7 @@ export async function POST(request: Request) {
             })
     );
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      // @ts-ignore — thinkingConfig not yet typed in this SDK version but supported by the API
-      generationConfig: { thinkingConfig: { thinkingBudget: 0 } },
+    const modelConfig = {
       systemInstruction: {
         role: "system",
         parts: [{ text: `You are a Product Intelligence Assistant. Your role is to analyze and answer questions based on a specific JSON dataset of product reviews, including inferred demographics and identified issues.
@@ -157,43 +211,29 @@ export async function POST(request: Request) {
           - Use bullet points for Pros, Cons, and Use Cases.
           - If comparing products or reviewers, use a table format.` }]
       }
-    });
+    };
 
-    const chat = model.startChat({ history });
-    const result = await chat.sendMessageStream(currentMessageParts);
+    const model = genAI.getGenerativeModel({ ...modelConfig, model: "gemini-3.1-flash-lite-preview" });
+    const fallbackModel = genAI.getGenerativeModel({ ...modelConfig, model: "gemini-3-flash-preview" });
+
+    const { text, usedFallback } = await generateWithRetry(model, fallbackModel, history, currentMessageParts);
+
+    if (usedFallback) console.warn("⚠️ Response served by gemini-2.5-pro fallback.");
+
+    const fullResponseText = text;
+
+    if (session.user?.id) {
+      await saveChat({
+        id,
+        messages: [...messages, { id: Date.now().toString(), role: "assistant", content: fullResponseText }],
+        userId: session.user.id,
+      });
+    }
 
     const stream = new ReadableStream({
-      async start(controller) {
-        let fullResponseText = "";
-        try {
-          for await (const chunk of result.stream) {
-            const text = chunk.text();
-            if (text) {
-              fullResponseText += text;
-              controller.enqueue(`0:${JSON.stringify(text)}\n`);
-            }
-          }
-
-          if (session.user?.id) {
-            await saveChat({
-              id,
-              messages: [...messages, { id: Date.now().toString(), role: "assistant", content: fullResponseText }],
-              userId: session.user.id,
-            });
-          }
-        } catch (err: any) {
-          console.error("Stream Error:", err);
-          console.error("Stream Error details:", JSON.stringify({
-            message: err?.message,
-            status: err?.status,
-            statusText: err?.statusText,
-            errorDetails: err?.errorDetails,
-            cause: err?.cause?.message,
-          }, null, 2));
-          controller.error(err);
-        } finally {
-          controller.close();
-        }
+      start(controller) {
+        controller.enqueue(`0:${JSON.stringify(fullResponseText)}\n`);
+        controller.close();
       },
     });
 
@@ -201,7 +241,14 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error("❌ Final Chat Route Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    const friendlyMessage = "Er is een fout opgetreden. Gemini is momenteel niet beschikbaar. Probeer het opnieuw.";
+    const errorStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(`0:${JSON.stringify(friendlyMessage)}\n`);
+        controller.close();
+      },
+    });
+    return new Response(errorStream, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Vercel-AI-Data-Stream": "v1" } });
   }
 }
 

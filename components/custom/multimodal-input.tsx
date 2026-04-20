@@ -5,7 +5,7 @@ import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
 import React, {
     useRef,
     useEffect,
-    useCallback, 
+    useCallback,
     Dispatch,
     SetStateAction,
     ChangeEvent, useState,
