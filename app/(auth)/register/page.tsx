@@ -30,7 +30,7 @@ export default function Page() {
       toast.error("Failed validating your submission!");
     } else if (state.status === "success") {
       toast.success("Account created successfully");
-      router.refresh();
+      router.push("/");
     } else if (state.status === "access_denied") {
       toast.error("Access Denied: Email not allowed to register");
     }
